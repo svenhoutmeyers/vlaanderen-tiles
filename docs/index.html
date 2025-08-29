@@ -15,17 +15,8 @@
       const protocol = new pmtiles.Protocol();
       maplibregl.addProtocol("pmtiles", protocol.tile);
 
-      // === Kies één van de twee URL's ===
-      // 1) Route A (Pages uit docs/):
-      // const url = "pmtiles://https://<user>.github.io/<repo>/vlaanderen.pmtiles";
-
-      // 2) Route B (Release + jsDelivr):
-      // const url = "pmtiles://https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/vlaanderen.pmtiles";
-
-      // Tijdelijk test je lokaal (als je in docs/ serveert met een static server):
-      // const url = "pmtiles://vlaanderen.pmtiles";
-
-      const url = "pmtiles://vlaanderen.pmtiles"; // vervang na deployment
+      // === Gebruik je Pages- of jsDelivr-URL ===
+      const url = "pmtiles://https://svenhoutmeyers.github.io/vlaanderen-tiles/vlaanderen.pmtiles";
 
       const map = new maplibregl.Map({
         container: "map",
@@ -37,9 +28,58 @@
             { id: "vl-line", type: "line", source: "vlaanderen", "source-layer": "sectors", paint: { "line-width": 0.6 } }
           ]
         },
-        center: [4.5, 51.0], zoom: 7
+        center: [4.5, 51.0],
+        zoom: 7
       });
+
       map.addControl(new maplibregl.NavigationControl(), "top-right");
+
+      // --- Hover highlight layer (bovenop) ---
+      map.on("load", () => {
+        map.addLayer({
+          id: "vl-hover",
+          type: "line",
+          source: "vlaanderen",
+          "source-layer": "sectors",
+          paint: { "line-width": 2 }
+        });
+        // init: niets highlighten
+        map.setFilter("vl-hover", ["==", ["get", "__never__"], 1]);
+      });
+
+      // Kandidaten voor ID-veld (pas aan als jouw dataset anders heet)
+      const KEY_CANDIDATES = ["CD_SECT", "CD_SECTOR", "SECTOR_ID", "ID_SECTOR", "SECTCODE", "NISCODE", "id", "ID"];
+      function pickIdKey(props) {
+        for (const k of KEY_CANDIDATES) if (k in props) return k;
+        return null;
+      }
+
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+
+      // Tooltip + highlight op hover
+      map.on("mousemove", "vl-fill", (e) => {
+        const f = e.features && e.features[0];
+        if (!f) return;
+
+        const key = pickIdKey(f.properties);
+        const val = key ? f.properties[key] : "(geen ID gevonden)";
+        popup.setLngLat(e.lngLat).setText(String(val)).addTo(map);
+        map.getCanvas().style.cursor = "pointer";
+
+        if (key) {
+          map.setFilter("vl-hover", ["==", ["get", key], val]);
+        }
+      });
+
+      map.on("mouseleave", "vl-fill", () => {
+        popup.remove();
+        map.getCanvas().style.cursor = "";
+        map.setFilter("vl-hover", ["==", ["get", "__never__"], 1]); // highlight uit
+      });
+
+      // (Handig om één keer te checken welke properties je hebt)
+      // map.on("click", "vl-fill", (e) => console.log(e.features[0].properties));
     </script>
+
   </body>
 </html>
