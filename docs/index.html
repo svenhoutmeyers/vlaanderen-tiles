@@ -13,7 +13,7 @@
     </style>
   </head>
   <body>
-    <div>v0.2</div>
+    <div>v0.3</div>
     <div id="map"></div>
     <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
@@ -84,17 +84,20 @@
           const f = e.features && e.features[0];
           if (!f) return;
 
-          // hover-state uitzetten op vorige feature
+          // ---- POPUP met alle properties ----
+          popup.setLngLat(e.lngLat)
+              .setHTML(propsToHTML(f.properties))
+              .addTo(map);
+          map.getCanvas().style.cursor = "pointer";
+
+          // ---- HOVER-STATE voor outline ----
           if (hoveredId !== null) {
             map.setFeatureState(
               { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
               { hover: false }
             );
           }
-
-          hoveredId = f.id; // vereist --generate-ids bij tilen
-
-          // hover-state aan op huidige feature
+          hoveredId = f.id; // vereist --generate-ids
           map.setFeatureState(
             { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
             { hover: true }
@@ -102,6 +105,11 @@
         });
 
         map.on("mouseleave", "vl-fill", () => {
+          // ---- POPUP verbergen + cursor reset ----
+          popup.remove();
+          map.getCanvas().style.cursor = "";
+
+          // ---- HOVER-STATE uit ----
           if (hoveredId !== null) {
             map.setFeatureState(
               { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
@@ -110,7 +118,7 @@
           }
           hoveredId = null;
         });
-      });
+
 
     </script>
 
