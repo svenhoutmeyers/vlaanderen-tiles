@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Vlaanderen PMTiles Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.css" rel="stylesheet" />
+    <style>#map{height:90vh;margin:0}</style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
+    <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
+    <script>
+      const protocol = new pmtiles.Protocol();
+      maplibregl.addProtocol("pmtiles", protocol.tile);
+
+      // === Kies één van de twee URL's ===
+      // 1) Route A (Pages uit docs/):
+      // const url = "pmtiles://https://<user>.github.io/<repo>/vlaanderen.pmtiles";
+
+      // 2) Route B (Release + jsDelivr):
+      // const url = "pmtiles://https://cdn.jsdelivr.net/gh/<user>/<repo>@<tag>/vlaanderen.pmtiles";
+
+      // Tijdelijk test je lokaal (als je in docs/ serveert met een static server):
+      // const url = "pmtiles://vlaanderen.pmtiles";
+
+      const url = "pmtiles://vlaanderen.pmtiles"; // vervang na deployment
+
+      const map = new maplibregl.Map({
+        container: "map",
+        style: {
+          version: 8,
+          sources: { vlaanderen: { type: "vector", url } },
+          layers: [
+            { id: "vl-fill", type: "fill", source: "vlaanderen", "source-layer": "sectors", paint: { "fill-opacity": 0.2 } },
+            { id: "vl-line", type: "line", source: "vlaanderen", "source-layer": "sectors", paint: { "line-width": 0.6 } }
+          ]
+        },
+        center: [4.5, 51.0], zoom: 7
+      });
+      map.addControl(new maplibregl.NavigationControl(), "top-right");
+    </script>
+  </body>
+</html>
