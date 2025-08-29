@@ -20,10 +20,9 @@
     <script>
       const protocol = new pmtiles.Protocol();
       maplibregl.addProtocol("pmtiles", protocol.tile);
-
-      // === Gebruik je Pages- of jsDelivr-URL ===
+    
       const url = "pmtiles://https://svenhoutmeyers.github.io/vlaanderen-tiles/vlaanderen.pmtiles";
-
+    
       const map = new maplibregl.Map({
         container: "map",
         style: {
@@ -36,15 +35,12 @@
         },
         center: [4.5, 51.0], zoom: 7
       });
-
+    
       map.addControl(new maplibregl.NavigationControl(), "top-right");
-
-      // simpele HTML-escaper
+    
       function esc(s) {
         return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
-
-      // properties -> HTML-tabel (gesorteerd op key, lege/null waardes weglaten)
       function propsToHTML(props) {
         const entries = Object.entries(props)
           .filter(([k,v]) => v !== null && v !== undefined && String(v) !== "")
@@ -52,7 +48,7 @@
         const rows = entries.map(([k,v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
         return `<div class="prop-popup"><table>${rows || "<tr><td>(geen eigenschappen)</td></tr>"}</table></div>`;
       }
-
+    
       const popup = new maplibregl.Popup({
         closeButton: false,
         closeOnClick: false,
@@ -60,11 +56,10 @@
         anchor: "top-left",
         maxWidth: "360px"
       });
-
+    
       let hoveredId = null;
-
+    
       map.on("load", () => {
-        // extra outline-laag boven je fill/line
         map.addLayer({
           id: "vl-hover-outline",
           type: "line",
@@ -74,23 +69,23 @@
             "line-width": [
               "case",
               ["boolean", ["feature-state", "hover"], false],
-              3,   // dikte wanneer gehoverd
-              0.6  // standaard
+              3,
+              0.6
             ]
           }
-        }, "vl-line"); // zet 'm boven de bestaande lijnlaag
-
+        }, "vl-line");
+    
         map.on("mousemove", "vl-fill", (e) => {
           const f = e.features && e.features[0];
           if (!f) return;
-
-          // ---- POPUP met alle properties ----
+    
+          // Popup met alle properties
           popup.setLngLat(e.lngLat)
-              .setHTML(propsToHTML(f.properties))
-              .addTo(map);
+               .setHTML(propsToHTML(f.properties))
+               .addTo(map);
           map.getCanvas().style.cursor = "pointer";
-
-          // ---- HOVER-STATE voor outline ----
+    
+          // Hover highlight
           if (hoveredId !== null) {
             map.setFeatureState(
               { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
@@ -103,13 +98,10 @@
             { hover: true }
           );
         });
-
+    
         map.on("mouseleave", "vl-fill", () => {
-          // ---- POPUP verbergen + cursor reset ----
           popup.remove();
           map.getCanvas().style.cursor = "";
-
-          // ---- HOVER-STATE uit ----
           if (hoveredId !== null) {
             map.setFeatureState(
               { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
@@ -118,9 +110,9 @@
           }
           hoveredId = null;
         });
-
-
+      }); // <-- deze was je kwijt
     </script>
+    
 
   </body>
 </html>
