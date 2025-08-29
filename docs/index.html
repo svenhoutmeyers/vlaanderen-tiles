@@ -13,7 +13,7 @@
     </style>
   </head>
   <body>
-    <div>v0.1</div>
+    <div>v0.2</div>
     <div id="map"></div>
     <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
@@ -61,23 +61,57 @@
         maxWidth: "360px"
       });
 
+      let hoveredId = null;
+
       map.on("load", () => {
-        // Hover: toon alle metadata in popup
+        // extra outline-laag boven je fill/line
+        map.addLayer({
+          id: "vl-hover-outline",
+          type: "line",
+          source: "vlaanderen",
+          "source-layer": "sectors",
+          paint: {
+            "line-width": [
+              "case",
+              ["boolean", ["feature-state", "hover"], false],
+              3,   // dikte wanneer gehoverd
+              0.6  // standaard
+            ]
+          }
+        }, "vl-line"); // zet 'm boven de bestaande lijnlaag
+
         map.on("mousemove", "vl-fill", (e) => {
           const f = e.features && e.features[0];
           if (!f) return;
-          popup.setLngLat(e.lngLat).setHTML(propsToHTML(f.properties)).addTo(map);
-          map.getCanvas().style.cursor = "pointer";
+
+          // hover-state uitzetten op vorige feature
+          if (hoveredId !== null) {
+            map.setFeatureState(
+              { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
+              { hover: false }
+            );
+          }
+
+          hoveredId = f.id; // vereist --generate-ids bij tilen
+
+          // hover-state aan op huidige feature
+          map.setFeatureState(
+            { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
+            { hover: true }
+          );
         });
 
         map.on("mouseleave", "vl-fill", () => {
-          popup.remove();
-          map.getCanvas().style.cursor = "";
+          if (hoveredId !== null) {
+            map.setFeatureState(
+              { source: "vlaanderen", sourceLayer: "sectors", id: hoveredId },
+              { hover: false }
+            );
+          }
+          hoveredId = null;
         });
-
-        // Handig om 1x te inspecteren wat er precies in zit:
-        // map.on("click", "vl-fill", (e) => console.log(e.features[0].properties));
       });
+
     </script>
 
   </body>
