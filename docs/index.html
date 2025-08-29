@@ -8,6 +8,7 @@
     <style>#map{height:90vh;margin:0}</style>
   </head>
   <body>
+    <div>v0.1</div>
     <div id="map"></div>
     <script src="https://unpkg.com/maplibre-gl@3.6.1/dist/maplibre-gl.js"></script>
     <script src="https://unpkg.com/pmtiles@3.0.6/dist/pmtiles.js"></script>
@@ -28,57 +29,50 @@
             { id: "vl-line", type: "line", source: "vlaanderen", "source-layer": "sectors", paint: { "line-width": 0.6 } }
           ]
         },
-        center: [4.5, 51.0],
-        zoom: 7
+        center: [4.5, 51.0], zoom: 7
       });
 
       map.addControl(new maplibregl.NavigationControl(), "top-right");
 
-      // --- Hover highlight layer (bovenop) ---
-      map.on("load", () => {
-        map.addLayer({
-          id: "vl-hover",
-          type: "line",
-          source: "vlaanderen",
-          "source-layer": "sectors",
-          paint: { "line-width": 2 }
-        });
-        // init: niets highlighten
-        map.setFilter("vl-hover", ["==", ["get", "__never__"], 1]);
-      });
-
-      // Kandidaten voor ID-veld (pas aan als jouw dataset anders heet)
-      const KEY_CANDIDATES = ["CD_SECT", "CD_SECTOR", "SECTOR_ID", "ID_SECTOR", "SECTCODE", "NISCODE", "id", "ID"];
-      function pickIdKey(props) {
-        for (const k of KEY_CANDIDATES) if (k in props) return k;
-        return null;
+      // simpele HTML-escaper
+      function esc(s) {
+        return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
       }
 
-      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false });
+      // properties -> HTML-tabel (gesorteerd op key, lege/null waardes weglaten)
+      function propsToHTML(props) {
+        const entries = Object.entries(props)
+          .filter(([k,v]) => v !== null && v !== undefined && String(v) !== "")
+          .sort(([a],[b]) => a.localeCompare(b));
+        const rows = entries.map(([k,v]) => `<tr><th>${esc(k)}</th><td>${esc(v)}</td></tr>`).join("");
+        return `<div class="prop-popup"><table>${rows || "<tr><td>(geen eigenschappen)</td></tr>"}</table></div>`;
+      }
 
-      // Tooltip + highlight op hover
-      map.on("mousemove", "vl-fill", (e) => {
-        const f = e.features && e.features[0];
-        if (!f) return;
-
-        const key = pickIdKey(f.properties);
-        const val = key ? f.properties[key] : "(geen ID gevonden)";
-        popup.setLngLat(e.lngLat).setText(String(val)).addTo(map);
-        map.getCanvas().style.cursor = "pointer";
-
-        if (key) {
-          map.setFilter("vl-hover", ["==", ["get", key], val]);
-        }
+      const popup = new maplibregl.Popup({
+        closeButton: false,
+        closeOnClick: false,
+        offset: [8, 8],
+        anchor: "top-left",
+        maxWidth: "360px"
       });
 
-      map.on("mouseleave", "vl-fill", () => {
-        popup.remove();
-        map.getCanvas().style.cursor = "";
-        map.setFilter("vl-hover", ["==", ["get", "__never__"], 1]); // highlight uit
-      });
+      map.on("load", () => {
+        // Hover: toon alle metadata in popup
+        map.on("mousemove", "vl-fill", (e) => {
+          const f = e.features && e.features[0];
+          if (!f) return;
+          popup.setLngLat(e.lngLat).setHTML(propsToHTML(f.properties)).addTo(map);
+          map.getCanvas().style.cursor = "pointer";
+        });
 
-      // (Handig om één keer te checken welke properties je hebt)
-      // map.on("click", "vl-fill", (e) => console.log(e.features[0].properties));
+        map.on("mouseleave", "vl-fill", () => {
+          popup.remove();
+          map.getCanvas().style.cursor = "";
+        });
+
+        // Handig om 1x te inspecteren wat er precies in zit:
+        // map.on("click", "vl-fill", (e) => console.log(e.features[0].properties));
+      });
     </script>
 
   </body>
